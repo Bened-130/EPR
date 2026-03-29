@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shamba EPR — Kenya Agricultural Product Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --green-deep: #1a3a1e;
+  --green-mid: #2d6a35;
+  --green-bright: #4caf50;
+  --green-light: #c8e6c9;
+  --green-pale: #f1f8e9;
+  --earth: #6d4c41;
+  --earth-light: #efebe9;
+  --amber: #f59e0b;
+  --amber-light: #fef3c7;
+  --sky: #0284c7;
+  --sky-light: #e0f2fe;
+  --cream: #fafaf7;
+  --ink: #1a1a18;
+  --ink-mid: #3d3d3a;
+  --ink-soft: #6b6b66;
+  --border: rgba(26,58,30,0.12);
+  --card-bg: #ffffff;
+  --surface: #f7f9f5;
+  --dairy-color: #0284c7;
+  --dairy-bg: #e0f2fe;
+  --tea-color: #2d6a35;
+  --tea-bg: #c8e6c9;
+  --coffee-color: #6d4c41;
+  --coffee-bg: #efebe9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Layout ── */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 240px;
+  background: var(--green-deep);
+  color: #e8f5e9;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.logo-mark {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo-sub {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-top: 4px;
+}
+
+.sidebar-section {
+  padding: 16px 12px 8px;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.7);
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: var(--green-mid); color: #fff; font-weight: 500; }
+
+.nav-icon { width: 16px; height: 16px; opacity: 0.8; flex-shrink: 0; }
+
+.sidebar-role {
+  margin-top: auto;
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.role-selector {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12.5px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.5)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.role-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+/* ── Main content ── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.topbar {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.date-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.page { display: none; padding: 24px 28px; }
+.page.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-sm { padding: 16px; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--ink-mid); margin-bottom: 4px; }
+
+/* ── Stats row ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.stat-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.up { background: #dcfce7; color: #15803d; }
+.down { background: #fee2e2; color: #dc2626; }
+
+/* ── Crop type badges ── */
+.crop-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.crop-dairy { background: var(--dairy-bg); color: var(--dairy-color); }
+.crop-tea { background: var(--tea-bg); color: var(--tea-color); }
+.crop-coffee { background: var(--coffee-bg); color: var(--coffee-color); }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface); }
+
+/* ── Status badges ── */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.s-pending { background: var(--amber-light); color: #92400e; }
+.s-pending .status-dot { background: var(--amber); }
+.s-verified { background: #dcfce7; color: #15803d; }
+.s-verified .status-dot { background: #22c55e; }
+.s-rejected { background: #fee2e2; color: #dc2626; }
+.s-rejected .status-dot { background: #ef4444; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--green-mid);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--green-deep); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink-mid);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { background: var(--surface); }
+
+.btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.btn-danger:hover { background: #fecaca; }
+
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+/* ── Forms ── */
+.form-grid { display: grid; gap: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--card-bg);
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--green-mid);
+  box-shadow: 0 0 0 3px rgba(45,106,53,0.1);
+}
+
+/* ── Scale widget ── */
+.scale-widget {
+  background: linear-gradient(135deg, #1a3a1e, #2d6a35);
+  border-radius: 10px;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.scale-reading {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #a5d6a7;
+}
+
+.scale-unit {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 2px;
+}
+
+.scale-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.scale-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #69f0ae;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Farmer avatar ── */
+.farmer-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Shift pill ── */
+.shift-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.shift-morning { background: #fef9c3; color: #854d0e; }
+.shift-evening { background: #e0e7ff; color: #3730a3; }
+.shift-daily { background: #f0fdf4; color: #166534; }
+
+/* ── Progress bars ── */
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* ── Grid layouts ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 24px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--green-deep);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.25s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: none; }
+
+/* ── Charts ── */
+.mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 48px;
+}
+.mini-bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+
+/* ── Month calendar ── */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s;
+  border: 1px solid transparent;
+  padding: 2px;
+}
+
+.day-cell:hover { border-color: var(--green-mid); }
+.day-cell.has-data { background: var(--green-pale); }
+.day-cell.today { background: var(--green-mid); color: #fff; }
+.day-cell .day-num { font-size: 10px; font-weight: 600; }
+.day-cell .day-qty { font-size: 8px; color: var(--green-mid); font-family: 'IBM Plex Mono', monospace; }
+.day-cell.today .day-qty { color: rgba(255,255,255,0.8); }
+
+/* ── Offline indicator ── */
+.offline-bar {
+  background: var(--amber);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px;
+  display: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .sidebar { width: 56px; }
+  .logo-mark, .logo-sub, .sidebar-section-label, .nav-item span, .role-label, .role-selector { display: none; }
+  .nav-item { justify-content: center; padding: 10px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* ── Verification diff highlight ── */
+.qty-diff { color: var(--amber); font-weight: 600; }
+.qty-match { color: #15803d; }
+
+/* ── Print / Export preview ── */
+.excel-preview {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  overflow-x: auto;
+}
+.excel-preview table { border-collapse: collapse; }
+.excel-preview th, .excel-preview td {
+  border: 1px solid #ccc;
+  padding: 3px 8px;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 10.5px;
+}
+.excel-preview th { background: #e8f5e9; text-align: center; font-weight: 600; }
+.excel-preview td:first-child { text-align: left; }
+.excel-preview .total-row { background: #f1f8e9; font-weight: 600; }
+.excel-preview .bonus-row { background: var(--amber-light); }
+
+/* ── Notification dot ── */
+.notif-dot {
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+}
+
+.nav-item { position: relative; }
+</style>
+</head>
+<body>
+
+<div id="offline-bar" class="offline-bar">⚠ Offline mode — data will sync when connection restores</div>
+
+<div class="shell">
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">Shamba EPR</div>
+    <div class="logo-sub">Kenya Agriculture</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" data-page="dashboard">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.5"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" data-page="log-entry">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="5" x2="8" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Log Delivery</span>
+    </div>
+    <div class="nav-item" data-page="pending">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><polyline points="8 5 8 8 10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Pending Entries</span>
+      <div id="pending-nav-dot" style="display:none;"><div class="notif-dot"></div></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Records</div>
+    <div class="nav-item" data-page="farmers">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Farmers</span>
+    </div>
+    <div class="nav-item" data-page="entries">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><line x1="5" y1="8.5" x2="11" y2="8.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><line x1="5" y1="11.5" x2="9" y2="11.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+      <span>All Entries</span>
+    </div>
+    <div class="nav-item" data-page="payments">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span>Payments</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Admin</div>
+    <div class="nav-item" data-page="prices">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L10 6.5H15L11 9.5L12.5 14.5L8 11.5L3.5 14.5L5 9.5L1 6.5H6L8 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <span>Prices & Bonuses</span>
+    </div>
+    <div class="nav-item" data-page="export">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 12l5 2 5-2M8 2v10M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Export Reports</span>
+    </div>
+  </div>
+
+  <div class="sidebar-role">
+    <div class="role-label">Active Role</div>
+    <select class="role-selector" id="role-select" onchange="switchRole(this.value)">
+      <option value="farmer">Farmer (John Kamau)</option>
+      <option value="worker">Company Worker</option>
+      <option value="admin">Admin / Manager</option>
+    </select>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="date-badge" id="date-display"></div>
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--green-deep);">JK</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ DASHBOARD ══════════════════ -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Today's Deliveries</div>
+        <div class="stat-value" id="stat-today">7</div>
+        <div class="stat-sub">entries logged</div>
+        <div class="stat-change up">↑ 3 from yesterday</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Verification</div>
+        <div class="stat-value" id="stat-pending" style="color:var(--amber);">3</div>
+        <div class="stat-sub">awaiting worker approval</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Monthly Revenue</div>
+        <div class="stat-value" style="font-size:18px;">KSh 284,500</div>
+        <div class="stat-sub">March 2025</div>
+        <div class="stat-change up">↑ 12% vs Feb</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Farmers</div>
+        <div class="stat-value">42</div>
+        <div class="stat-sub">dairy · tea · coffee</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <!-- Today's activity -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--ink);">Today's Activity</div>
+            <div style="font-size:11px;color:var(--ink-soft);" id="today-sub"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="navigate('log-entry')">+ Log Delivery</button>
+        </div>
+        <div class="table-wrap">
+          <table id="today-table">
+            <thead><tr>
+              <th>Farmer</th><th>Crop</th><th>Shift</th><th>Qty</th><th>Status</th>
+            </tr></thead>
+            <tbody id="today-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick stats by crop -->
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:14px;">This Month by Crop</div>
+        <div id="crop-breakdown"></div>
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--ink-mid);margin-bottom:8px;">Daily Volume (last 7 days)</div>
+          <div class="mini-chart" id="week-chart"></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:4px;" id="week-labels"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending items -->
+    <div class="card" id="pending-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:700;color:var(--ink);">Pending Verification <span style="background:var(--amber-light);color:#92400e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-left:6px;" id="pending-count-badge">3</span></div>
+        <button class="btn btn-outline btn-sm" onclick="navigate('pending')">View all →</button>
+      </div>
+      <div id="pending-preview"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LOG DELIVERY ══════════════════ -->
+  <div class="page" id="page-log-entry">
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px;">New Delivery Entry</div>
+          <div class="form-grid">
+            <div>
+              <label>Farmer</label>
+              <select id="log-farmer" onchange="updateCropType()">
+                <option value="">Select farmer...</option>
+              </select>
+            </div>
+            <div>
+              <label>Crop Type</label>
+              <select id="log-crop" onchange="updateShiftOptions()">
+                <option value="dairy">🐄 Dairy (Milk — Litres)</option>
+                <option value="tea">🍃 Tea (Green Leaf — kg)</option>
+                <option value="coffee">☕ Coffee (Cherries — kg)</option>
+              </select>
+            </div>
+            <div id="shift-row">
+              <label>Shift <span style="font-size:10px;color:var(--ink-soft);">(Dairy only)</span></label>
+              <select id="log-shift">
+                <option value="morning">Morning (6 AM – 10 AM)</option>
+                <option value="evening">Evening (4 PM – 8 PM)</option>
+              </select>
+            </div>
+            <div>
+              <label>Date</label>
+              <input type="date" id="log-date">
+            </div>
+            <div>
+              <label>Estimated Quantity</label>
+              <input type="number" id="log-est" placeholder="e.g. 48" min="0" step="0.1">
+            </div>
+            <div>
+              <label>Unit</label>
+              <input type="text" id="log-unit" value="Litres" readonly style="background:var(--surface);color:var(--ink-soft);">
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="submitEntry()">Submit for Verification</button>
+            <button class="btn btn-outline" onclick="simulateScale()">📡 Fetch Scale Reading</button>
+          </div>
+        </div>
+
+        <!-- Duplicate check alert -->
+        <div id="duplicate-alert" style="display:none;" class="card" style="border-color:#ef4444;">
+          <div style="color:#dc2626;font-weight:700;font-size:13px;margin-bottom:6px;">⚠ Duplicate Detected</div>
+          <div style="font-size:12px;color:var(--ink-soft);">This farmer already has a <strong id="dup-shift"></strong> entry today that is pending verification. A second entry cannot be submitted until the first is verified.</div>
+        </div>
+      </div>
+
+      <!-- Scale widget + recent -->
+      <div>
+        <div class="scale-widget" style="margin-bottom:14px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.5);margin-bottom:8px;font-weight:600;">Bluetooth Scale Reading</div>
+          <div class="scale-reading" id="scale-value">— . —</div>
+          <div class="scale-unit" id="scale-unit-label">Litres</div>
+          <div class="scale-status">
+            <div class="scale-dot"></div>
+            <span id="scale-status-text">Awaiting connection...</span>
+          </div>
+          <div style="margin-top:12px;font-size:11px;color:rgba(255,255,255,0.4);">Serial: <span style="font-family:'IBM Plex Mono',monospace;" id="scale-serial">KE-SC-0047</span></div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;">Verification Rules</div>
+          <div style="font-size:12px;color:var(--ink-soft);display:flex;flex-direction:column;gap:8px;">
+            <div>✅ Dairy: max 2 entries/day (morning + evening). Second blocked if first unverified.</div>
+            <div>✅ Tea/Coffee: 1 entry/day per farmer.</div>
+            <div>✅ Scale reading overrides estimated quantity if difference &gt; 5%.</div>
+            <div>✅ Unique index: farmerID + date + shift prevents duplicates at DB level.</div>
+            <div>✅ Offline entries queued; sync triggers verification workflow on reconnect.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PENDING ENTRIES ══════════════════ -->
+  <div class="page" id="page-pending">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;">Pending Verification Queue</div>
+          <div style="font-size:12px;color:var(--ink-soft);">Workers: review scale data and approve or adjust entries</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="filterPending('all')">All</button>
+          <button class="btn btn-outline btn-sm" onclick="filterPending('dairy')">Dairy</button>
+          <button class="btn btn-outline btn-sm" onclick="filterPending('tea')">Tea</button>
+          <button class="btn btn-outline btn-sm" onclick="filterPending('coffee')">Coffee</button>
+        </div>
+      </div>
+      <div id="pending-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ FARMERS ══════════════════ -->
+  <div class="page" id="page-farmers">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:700;">Farmer Registry</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddFarmer()">+ Add Farmer</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="farmers-table">
+          <thead><tr>
+            <th>Farmer</th><th>ID</th><th>Crop</th><th>Account</th>
+            <th>Monthly (kg/L)</th><th>Yearly Total</th><th>Bonus Eligible</th><th></th>
+          </tr></thead>
+          <tbody id="farmers-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ ALL ENTRIES ══════════════════ -->
+  <div class="page" id="page-entries">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:700;">All Delivery Entries</div>
+      <div style="display:flex;gap:8px;">
+        <input type="month" id="entries-month" style="width:160px;font-size:13px;">
+        <select id="entries-crop-filter" style="width:130px;font-size:13px;" onchange="renderEntries()">
+          <option value="">All crops</option>
+          <option value="dairy">Dairy</option>
+          <option value="tea">Tea</option>
+          <option value="coffee">Coffee</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Farmer</th><th>Crop</th><th>Shift</th>
+            <th>Est. Qty</th><th>Scale Qty</th><th>Final Qty</th>
+            <th>Verified By</th><th>Status</th><th>Payout</th>
+          </tr></thead>
+          <tbody id="entries-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PAYMENTS ══════════════════ -->
+  <div class="page" id="page-payments">
+    <div style="margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Payment Statements</div>
+      <div style="font-size:12px;color:var(--ink-soft);">Monthly totals computed from verified entries. Bonuses accrued annually (June year-end).</div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Total Payable (March)</div><div class="stat-value" style="font-size:18px;">KSh 284,500</div></div>
+      <div class="stat-card"><div class="stat-label">Dairy Payments</div><div class="stat-value" style="font-size:18px;">KSh 134,100</div></div>
+      <div class="stat-card"><div class="stat-label">Tea Payments</div><div class="stat-value" style="font-size:18px;">KSh 89,200</div></div>
+      <div class="stat-card"><div class="stat-label">Coffee Payments</div><div class="stat-value" style="font-size:18px;">KSh 61,200</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="payments-table">
+          <thead><tr>
+            <th>Farmer</th><th>Crop</th><th>Monthly Qty</th><th>Price/Unit</th>
+            <th>Gross Pay</th><th>Bonus</th><th>Total Pay</th><th>Account</th><th>Status</th>
+          </tr></thead>
+          <tbody id="payments-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PRICES ══════════════════ -->
+  <div class="page" id="page-prices">
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Unit Prices (KSh)</div>
+          <div class="form-grid">
+            <div>
+              <label>🐄 Dairy — Milk (per Litre)</label>
+              <input type="number" id="price-dairy" value="45" step="0.5">
+            </div>
+            <div>
+              <label>🍃 Tea — Green Leaf (per kg)</label>
+              <input type="number" id="price-tea" value="28" step="0.5">
+            </div>
+            <div>
+              <label>☕ Coffee — Cherries (per kg)</label>
+              <input type="number" id="price-coffee" value="60" step="0.5">
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px;" onclick="savePrices()">Save Prices</button>
+        </div>
+
+        <div class="card">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Bonus Configuration</div>
+          <div class="form-grid">
+            <div>
+              <label>Yearly Quantity Threshold (units/kg/L)</label>
+              <input type="number" id="bonus-threshold" value="2000">
+            </div>
+            <div>
+              <label>Bonus Rate (%)</label>
+              <input type="number" id="bonus-rate" value="5" step="0.1" max="100">
+            </div>
+            <div>
+              <label>Payout Period</label>
+              <select id="bonus-period">
+                <option value="june">End of Financial Year (June)</option>
+                <option value="december">December</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:var(--green-pale);border-radius:8px;padding:12px;margin-top:14px;font-size:12px;color:var(--green-deep);">
+            <strong>Formula:</strong> IF yearly quantity &gt; <span id="formula-thresh">2000</span> units → Bonus = yearly total pay × <span id="formula-rate">5</span>% <br>
+            Bonus is accrued monthly and paid at financial year end.
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px;" onclick="saveBonusConfig()">Save Bonus Config</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Bonus Tracker (Current Year)</div>
+        <div id="bonus-tracker"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ EXPORT ══════════════════ -->
+  <div class="page" id="page-export">
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Export Monthly Excel Report</div>
+          <div class="form-grid">
+            <div>
+              <label>Month</label>
+              <input type="month" id="export-month">
+            </div>
+            <div>
+              <label>Crop Type</label>
+              <select id="export-crop">
+                <option value="all">All Crops</option>
+                <option value="dairy">Dairy</option>
+                <option value="tea">Tea</option>
+                <option value="coffee">Coffee</option>
+              </select>
+            </div>
+            <div>
+              <label>Report Scope</label>
+              <select id="export-scope">
+                <option value="all">All Farmers</option>
+                <option value="individual">Individual Farmer</option>
+              </select>
+            </div>
+            <div id="export-farmer-row" style="display:none;">
+              <label>Farmer</label>
+              <select id="export-farmer-select"></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary" onclick="generateExcel()">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 12l5 2 5-2M8 2v10M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Download Excel
+            </button>
+            <button class="btn btn-outline" onclick="previewExcel()">Preview</button>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">
+            Exports include: farmer name, daily quantities (Day 1–31), total qty, unit price, total pay, account number, and annual bonus calculation.
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Excel Column Structure</div>
+          <div style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:4px;">
+            <div><strong style="color:var(--ink);">A:</strong> Farmer Name</div>
+            <div><strong style="color:var(--ink);">B:</strong> Farmer ID</div>
+            <div><strong style="color:var(--ink);">C:</strong> Crop Type</div>
+            <div><strong style="color:var(--ink);">D:</strong> Account Number</div>
+            <div><strong style="color:var(--ink);">E–AI:</strong> Day 1 – Day 31 quantities</div>
+            <div><strong style="color:var(--ink);">AJ:</strong> Total Quantity =SUM(E:AI)</div>
+            <div><strong style="color:var(--ink);">AK:</strong> Unit Price (KSh)</div>
+            <div><strong style="color:var(--ink);">AL:</strong> Total Pay =AJ*AK</div>
+            <div><strong style="color:var(--ink);">AM:</strong> Yearly Qty (cumulative)</div>
+            <div><strong style="color:var(--ink);">AN:</strong> Bonus =IF(AM>2000, AL_yearly*0.05, 0)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Report Preview</div>
+        <div id="excel-preview-area" class="excel-preview">
+          <div style="font-size:12px;color:var(--ink-soft);padding:20px;text-align:center;">Click "Preview" to see the Excel layout</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ── VERIFY MODAL ── -->
+<div class="modal-overlay" id="verify-modal">
+  <div class="modal">
+    <div class="modal-title">Verify Delivery Entry</div>
+    <div id="verify-content"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" onclick="approveEntry()">✓ Approve</button>
+      <button class="btn btn-outline" onclick="adjustEntry()">✏ Adjust Quantity</button>
+      <button class="btn btn-danger" onclick="rejectEntry()">✗ Reject</button>
+      <button class="btn btn-outline" style="margin-left:auto;" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD FARMER MODAL ── -->
+<div class="modal-overlay" id="add-farmer-modal">
+  <div class="modal">
+    <div class="modal-title">Register New Farmer</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div><label>First Name</label><input type="text" id="nf-first" placeholder="John"></div>
+        <div><label>Last Name</label><input type="text" id="nf-last" placeholder="Kamau"></div>
+      </div>
+      <div>
+        <label>National ID / Farmer ID</label>
+        <input type="text" id="nf-id" placeholder="e.g. 12345678">
+      </div>
+      <div>
+        <label>Crop Type</label>
+        <select id="nf-crop">
+          <option value="dairy">Dairy (Milk)</option>
+          <option value="tea">Tea (Green Leaf)</option>
+          <option value="coffee">Coffee (Cherries)</option>
+        </select>
+      </div>
+      <div>
+        <label>M-Pesa / Bank Account</label>
+        <input type="text" id="nf-account" placeholder="2547xxxxxxxx">
+      </div>
+      <div>
+        <label>Location (Ward)</label>
+        <input type="text" id="nf-location" placeholder="e.g. Githunguri">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" onclick="saveFarmer()">Register Farmer</button>
+      <button class="btn btn-outline" onclick="document.getElementById('add-farmer-modal').classList.remove('open')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// DATA STORE
+// ════════════════════════════════════════
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+const currentMonth = todayStr.slice(0, 7);
+
+const PRICES = { dairy: 45, tea: 28, coffee: 60 };
+const BONUS_CONFIG = { threshold: 2000, rate: 5, period: 'june' };
+const COLORS = { dairy: '#0284c7', tea: '#2d6a35', coffee: '#6d4c41' };
+
+const FARMERS = [
+  { id: 'F001', name: 'John Kamau',      crop: 'dairy',  account: '254712345678', location: 'Githunguri', yearlyQty: 1480 },
+  { id: 'F002', name: 'Mary Wanjiku',    crop: 'dairy',  account: '254723456789', location: 'Limuru',     yearlyQty: 2340 },
+  { id: 'F003', name: 'Peter Mwangi',    crop: 'tea',    account: '254734567890', location: 'Muranga',    yearlyQty: 1750 },
+  { id: 'F004', name: 'Grace Njeri',     crop: 'tea',    account: '254745678901', location: 'Nyeri',      yearlyQty: 2150 },
+  { id: 'F005', name: 'David Ochieng',   crop: 'coffee', account: '254756789012', location: 'Kirinyaga',  yearlyQty: 890  },
+  { id: 'F006', name: 'Alice Moraa',     crop: 'coffee', account: '254767890123', location: 'Embu',       yearlyQty: 2080 },
+  { id: 'F007', name: 'Samuel Njoroge',  crop: 'dairy',  account: '254778901234', location: 'Kiambu',     yearlyQty: 1200 },
+  { id: 'F008', name: 'Jane Achieng',    crop: 'tea',    account: '254789012345', location: 'Kericho',    yearlyQty: 3200 },
+];
+
+let ENTRIES = [
+  { id: 'E001', farmerId: 'F001', date: todayStr, shift: 'morning', estQty: 48, scaleQty: 46.5, finalQty: 46.5, status: 'verified', verifiedBy: 'Worker A', workerNote: '' },
+  { id: 'E002', farmerId: 'F002', date: todayStr, shift: 'morning', estQty: 62, scaleQty: 64.2, finalQty: 64.2, status: 'pending',  verifiedBy: '',         workerNote: '' },
+  { id: 'E003', farmerId: 'F003', date: todayStr, shift: 'daily',   estQty: 85, scaleQty: 83.0, finalQty: 83.0, status: 'pending',  verifiedBy: '',         workerNote: '' },
+  { id: 'E004', farmerId: 'F004', date: todayStr, shift: 'daily',   estQty: 120, scaleQty: 121.5, finalQty: 121.5, status: 'verified', verifiedBy: 'Worker B', workerNote: '' },
+  { id: 'E005', farmerId: 'F006', date: todayStr, shift: 'daily',   estQty: 45, scaleQty: null,  finalQty: 45,   status: 'pending',  verifiedBy: '',         workerNote: '' },
+  { id: 'E006', farmerId: 'F007', date: todayStr, shift: 'morning', estQty: 30, scaleQty: 30.1, finalQty: 30.1, status: 'verified', verifiedBy: 'Worker A', workerNote: '' },
+  { id: 'E007', farmerId: 'F001', date: todayStr, shift: 'evening', estQty: 52, scaleQty: 50.5, finalQty: null, status: 'pending',  verifiedBy: '',         workerNote: '' },
+  // Historical
+  { id: 'E008', farmerId: 'F001', date: '2025-03-01', shift: 'morning', estQty: 45, scaleQty: 44.5, finalQty: 44.5, status: 'verified', verifiedBy: 'Worker A', workerNote: '' },
+  { id: 'E009', farmerId: 'F001', date: '2025-03-01', shift: 'evening', estQty: 50, scaleQty: 49.0, finalQty: 49.0, status: 'verified', verifiedBy: 'Worker A', workerNote: '' },
+  { id: 'E010', farmerId: 'F002', date: '2025-03-01', shift: 'morning', estQty: 60, scaleQty: 61.0, finalQty: 61.0, status: 'verified', verifiedBy: 'Worker B', workerNote: '' },
+  { id: 'E011', farmerId: 'F003', date: '2025-03-01', shift: 'daily',   estQty: 90, scaleQty: 88.5, finalQty: 88.5, status: 'verified', verifiedBy: 'Worker A', workerNote: '' },
+];
+
+let nextEntryId = 12;
+let currentVerifyId = null;
+let currentRole = 'farmer';
+
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  const titles = {
+    'dashboard': 'Dashboard', 'log-entry': 'Log Delivery', 'pending': 'Pending Verification',
+    'farmers': 'Farmer Registry', 'entries': 'All Entries', 'payments': 'Payment Statements',
+    'prices': 'Prices & Bonuses', 'export': 'Export Reports'
+  };
+  document.getElementById('page-title').textContent = titles[page] || page;
+  if (page === 'pending') renderPendingList();
+  if (page === 'farmers') renderFarmers();
+  if (page === 'entries') renderEntries();
+  if (page === 'payments') renderPayments();
+  if (page === 'prices') renderBonusTracker();
+  if (page === 'export') initExport();
+}
+
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+// ════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════
+function getFarmer(id) { return FARMERS.find(f => f.id === id); }
+function cropLabel(c) { return c === 'dairy' ? '🐄 Dairy' : c === 'tea' ? '🍃 Tea' : '☕ Coffee'; }
+function cropBadge(c) { return `<span class="crop-badge crop-${c}">${cropLabel(c)}</span>`; }
+function shiftBadge(s) {
+  if (s === 'morning') return `<span class="shift-pill shift-morning">🌅 Morning</span>`;
+  if (s === 'evening') return `<span class="shift-pill shift-evening">🌙 Evening</span>`;
+  return `<span class="shift-pill shift-daily">📅 Daily</span>`;
+}
+function statusBadge(s) {
+  const labels = { pending: 'Pending', verified: 'Verified', rejected: 'Rejected' };
+  return `<span class="status s-${s}"><span class="status-dot"></span>${labels[s]}</span>`;
+}
+function initials(name) { return name.split(' ').map(p => p[0]).join('').slice(0, 2); }
+function avatarColors(crop) {
+  return crop === 'dairy' ? 'background:#dbeafe;color:#1e40af'
+    : crop === 'tea' ? 'background:#dcfce7;color:#15803d'
+    : 'background:#fef3c7;color:#92400e';
+}
+function toast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function formatKsh(n) { return 'KSh ' + n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function pendingEntries() {
+  return ENTRIES.filter(e => e.status === 'pending');
+}
+
+// ════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════
+function renderDashboard() {
+  // Date
+  document.getElementById('date-display').textContent = today.toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  document.getElementById('today-sub').textContent = today.toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Stats
+  const todayEntries = ENTRIES.filter(e => e.date === todayStr);
+  const pendingCount = pendingEntries().length;
+  document.getElementById('stat-today').textContent = todayEntries.length;
+  document.getElementById('stat-pending').textContent = pendingCount;
+  document.getElementById('pending-count-badge').textContent = pendingCount;
+  if (pendingCount > 0) document.getElementById('pending-nav-dot').style.display = 'block';
+
+  // Today's table
+  const tbody = document.getElementById('today-tbody');
+  tbody.innerHTML = '';
+  todayEntries.forEach(e => {
+    const f = getFarmer(e.farmerId);
+    tbody.innerHTML += `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="farmer-avatar" style="${avatarColors(f.crop)}">${initials(f.name)}</div>
+        <span>${f.name}</span>
+      </div></td>
+      <td>${cropBadge(f.crop)}</td>
+      <td>${shiftBadge(e.shift)}</td>
+      <td><strong style="font-family:'IBM Plex Mono',monospace;">${e.scaleQty ?? e.estQty}</strong></td>
+      <td>${statusBadge(e.status)}</td>
+    </tr>`;
+  });
+
+  // Crop breakdown
+  const bd = document.getElementById('crop-breakdown');
+  const crops = ['dairy', 'tea', 'coffee'];
+  const monthEntries = ENTRIES.filter(e => e.date.startsWith('2025-03') && e.status === 'verified');
+  bd.innerHTML = '';
+  crops.forEach(c => {
+    const entries = monthEntries.filter(e => getFarmer(e.farmerId)?.crop === c);
+    const total = entries.reduce((s, e) => s + (e.finalQty ?? 0), 0);
+    const unit = c === 'dairy' ? 'L' : 'kg';
+    const pay = total * PRICES[c];
+    const max = 5000;
+    bd.innerHTML += `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink);">${cropLabel(c)}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">${total.toFixed(1)} ${unit} · ${formatKsh(pay)}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, total/max*100)}%;background:${COLORS[c]};"></div></div>
+    </div>`;
+  });
+
+  // Mini chart (last 7 days mock data)
+  const weekChart = document.getElementById('week-chart');
+  const weekLabels = document.getElementById('week-labels');
+  const vals = [2840, 3100, 2650, 3400, 2900, 3700, 3200];
+  const max = Math.max(...vals);
+  weekChart.innerHTML = '';
+  weekLabels.innerHTML = '';
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  vals.forEach((v, i) => {
+    weekChart.innerHTML += `<div class="mini-bar" style="height:${(v/max*100)}%;background:${i === 6 ? 'var(--green-mid)' : 'var(--green-light)'};"></div>`;
+    weekLabels.innerHTML += `<span>${days[i]}</span>`;
+  });
+
+  // Pending preview
+  const pp = document.getElementById('pending-preview');
+  const pending = pendingEntries().slice(0, 3);
+  if (pending.length === 0) {
+    pp.innerHTML = '<div style="text-align:center;color:var(--ink-soft);font-size:13px;padding:20px;">All entries verified ✓</div>';
+    return;
+  }
+  pp.innerHTML = '';
+  pending.forEach(e => {
+    const f = getFarmer(e.farmerId);
+    const diff = e.scaleQty ? Math.abs(e.scaleQty - e.estQty) / e.estQty * 100 : 0;
+    pp.innerHTML += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="farmer-avatar" style="${avatarColors(f.crop)}">${initials(f.name)}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;">${f.name}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${cropLabel(f.crop)} · ${shiftBadge(e.shift).replace(/<[^>]+>/g,'').trim()}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Est: ${e.estQty} → Scale: <span class="${diff > 5 ? 'qty-diff' : 'qty-match'}">${e.scaleQty ?? 'N/A'}</span></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:4px;" onclick="openVerify('${e.id}')">Verify</button>
+      </div>
+    </div>`;
+  });
+}
+
+// ════════════════════════════════════════
+// LOG DELIVERY
+// ════════════════════════════════════════
+function initLogEntry() {
+  const farmerSel = document.getElementById('log-farmer');
+  farmerSel.innerHTML = '<option value="">Select farmer...</option>';
+  FARMERS.forEach(f => {
+    farmerSel.innerHTML += `<option value="${f.id}">${f.name} (${f.id})</option>`;
+  });
+  document.getElementById('log-date').value = todayStr;
+}
+
+function updateCropType() {
+  const farmerId = document.getElementById('log-farmer').value;
+  if (!farmerId) return;
+  const f = getFarmer(farmerId);
+  document.getElementById('log-crop').value = f.crop;
+  updateShiftOptions();
+}
+
+function updateShiftOptions() {
+  const crop = document.getElementById('log-crop').value;
+  const shiftRow = document.getElementById('shift-row');
+  const unitInput = document.getElementById('log-unit');
+  shiftRow.style.display = crop === 'dairy' ? '' : 'none';
+  if (crop !== 'dairy') document.getElementById('log-shift').value = 'daily';
+  unitInput.value = crop === 'dairy' ? 'Litres' : 'kg';
+  document.getElementById('scale-unit-label').textContent = unitInput.value;
+}
+
+function simulateScale() {
+  const est = parseFloat(document.getElementById('log-est').value) || 50;
+  const variation = (Math.random() - 0.3) * 0.1;
+  const reading = (est * (1 + variation)).toFixed(1);
+  document.getElementById('scale-value').textContent = reading;
+  document.getElementById('scale-status-text').textContent = 'Connected · Reading stable';
+  toast('📡 Scale reading captured: ' + reading);
+}
+
+function submitEntry() {
+  const farmerId = document.getElementById('log-farmer').value;
+  const crop = document.getElementById('log-crop').value;
+  const shift = crop === 'dairy' ? document.getElementById('log-shift').value : 'daily';
+  const date = document.getElementById('log-date').value;
+  const est = parseFloat(document.getElementById('log-est').value);
+
+  if (!farmerId || !date || isNaN(est)) { toast('⚠ Please fill in all fields'); return; }
+
+  // Duplicate check
+  const dupe = ENTRIES.find(e =>
+    e.farmerId === farmerId && e.date === date && e.shift === shift
+  );
+  if (dupe) {
+    document.getElementById('duplicate-alert').style.display = '';
+    document.getElementById('dup-shift').textContent = shift + ' ' + crop;
+    toast('⛔ Duplicate entry blocked');
+    return;
+  }
+
+  // Second dairy shift blocked if first still pending
+  if (crop === 'dairy') {
+    const otherShift = shift === 'morning' ? 'evening' : 'morning';
+    const firstEntry = ENTRIES.find(e => e.farmerId === farmerId && e.date === date && e.shift === otherShift && e.status === 'pending');
+    if (firstEntry) {
+      document.getElementById('duplicate-alert').style.display = '';
+      document.getElementById('dup-shift').textContent = otherShift;
+      toast('⛔ Cannot submit — first shift entry still pending');
+      return;
+    }
+  }
+
+  document.getElementById('duplicate-alert').style.display = 'none';
+
+  const scaleVal = document.getElementById('scale-value').textContent;
+  const scaleQty = scaleVal.includes('—') ? null : parseFloat(scaleVal);
+
+  const entry = {
+    id: 'E' + String(nextEntryId++).padStart(3, '0'),
+    farmerId, date, shift, estQty: est,
+    scaleQty,
+    finalQty: scaleQty ?? est,
+    status: 'pending',
+    verifiedBy: '', workerNote: ''
+  };
+  ENTRIES.push(entry);
+
+  // Reset
+  document.getElementById('log-est').value = '';
+  document.getElementById('scale-value').textContent = '— . —';
+  document.getElementById('scale-status-text').textContent = 'Awaiting connection...';
+
+  renderDashboard();
+  toast('✅ Entry submitted — awaiting worker verification');
+}
+
+// ════════════════════════════════════════
+// PENDING VERIFICATION
+// ════════════════════════════════════════
+let pendingFilter = 'all';
+
+function filterPending(crop) {
+  pendingFilter = crop;
+  renderPendingList();
+}
+
+function renderPendingList() {
+  const list = document.getElementById('pending-list');
+  let entries = pendingEntries();
+  if (pendingFilter !== 'all') entries = entries.filter(e => getFarmer(e.farmerId)?.crop === pendingFilter);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-soft);">No pending entries ✓</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  entries.forEach(e => {
+    const f = getFarmer(e.farmerId);
+    const diff = e.scaleQty ? ((e.scaleQty - e.estQty) / e.estQty * 100) : 0;
+    const diffClass = Math.abs(diff) > 5 ? 'qty-diff' : 'qty-match';
+    const diffStr = e.scaleQty ? (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%' : 'N/A';
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+
+    list.innerHTML += `<div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="farmer-avatar" style="${avatarColors(f.crop)};width:40px;height:40px;font-size:14px;">${initials(f.name)}</div>
+          <div>
+            <div style="font-weight:700;font-size:14px;">${f.name}</div>
+            <div style="font-size:12px;color:var(--ink-soft);">${f.id} · ${f.location}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          ${cropBadge(f.crop)} ${shiftBadge(e.shift)}
+          <span style="font-size:12px;color:var(--ink-soft);">${e.date}</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;background:var(--surface);border-radius:8px;padding:12px;">
+        <div style="text-align:center;">
+          <div style="font-size:10px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:2px;">Farmer Est.</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;">${e.estQty}</div>
+          <div style="font-size:10px;color:var(--ink-soft);">${unit}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:2px;">Scale Reading</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;">${e.scaleQty ?? '—'}</div>
+          <div style="font-size:10px;color:var(--ink-soft);">${unit}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:2px;">Variance</div>
+          <div style="font-size:18px;font-weight:700;" class="${diffClass}">${diffStr}</div>
+          <div style="font-size:10px;color:${Math.abs(diff) > 5 ? 'var(--amber)' : '#15803d'}">${Math.abs(diff) > 5 ? '⚠ Override' : '✓ Match'}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:2px;">Payout</div>
+          <div style="font-size:14px;font-weight:700;color:var(--green-mid);">${formatKsh((e.scaleQty ?? e.estQty) * PRICES[f.crop])}</div>
+          <div style="font-size:10px;color:var(--ink-soft);">@ KSh ${PRICES[f.crop]}/${unit}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary btn-sm" onclick="quickApprove('${e.id}')">✓ Approve</button>
+        <button class="btn btn-outline btn-sm" onclick="openVerify('${e.id}')">View & Adjust</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectDirectly('${e.id}')">✗ Reject</button>
+      </div>
+    </div>`;
+  });
+}
+
+function quickApprove(entryId) {
+  const e = ENTRIES.find(en => en.id === entryId);
+  if (!e) return;
+  e.status = 'verified';
+  e.finalQty = e.scaleQty ?? e.estQty;
+  e.verifiedBy = currentRole === 'worker' ? 'Worker' : 'Admin';
+  renderPendingList();
+  renderDashboard();
+  toast('✅ Entry verified and approved');
+}
+
+function rejectDirectly(entryId) {
+  const e = ENTRIES.find(en => en.id === entryId);
+  if (!e) return;
+  e.status = 'rejected';
+  renderPendingList();
+  renderDashboard();
+  toast('Entry rejected');
+}
+
+function openVerify(entryId) {
+  currentVerifyId = entryId;
+  const e = ENTRIES.find(en => en.id === entryId);
+  const f = getFarmer(e.farmerId);
+  const unit = f.crop === 'dairy' ? 'L' : 'kg';
+  const diff = e.scaleQty ? ((e.scaleQty - e.estQty) / e.estQty * 100).toFixed(1) : null;
+
+  document.getElementById('verify-content').innerHTML = `
+    <div style="background:var(--surface);border-radius:8px;padding:12px;margin-bottom:14px;">
+      <div style="font-weight:600;margin-bottom:4px;">${f.name} — ${cropLabel(f.crop)} ${shiftBadge(e.shift)}</div>
+      <div style="font-size:12px;color:var(--ink-soft);">${e.date} · ${f.location} · Account: ${f.account}</div>
+    </div>
+    <div class="form-row">
+      <div><label>Farmer Estimate (${unit})</label><input type="number" value="${e.estQty}" id="v-est" step="0.1"></div>
+      <div><label>Scale Reading (${unit})</label><input type="number" value="${e.scaleQty ?? ''}" id="v-scale" step="0.1" placeholder="Enter scale reading..."></div>
+    </div>
+    <div style="margin-top:12px;">
+      <label>Final Approved Quantity (${unit})</label>
+      <input type="number" value="${e.scaleQty ?? e.estQty}" id="v-final" step="0.1">
+      ${diff && Math.abs(parseFloat(diff)) > 5 ? `<div style="font-size:11px;color:var(--amber);margin-top:4px;">⚠ Scale reading differs by ${diff}% — scale data will override estimate</div>` : ''}
+    </div>
+    <div style="margin-top:12px;">
+      <label>Worker Note (optional)</label>
+      <textarea id="v-note" placeholder="Any notes about this entry..." rows="2" style="resize:vertical;"></textarea>
+    </div>`;
+
+  document.getElementById('verify-modal').classList.add('open');
+}
+
+function approveEntry() {
+  const e = ENTRIES.find(en => en.id === currentVerifyId);
+  if (!e) return;
+  e.status = 'verified';
+  e.finalQty = parseFloat(document.getElementById('v-final').value) || e.scaleQty || e.estQty;
+  e.scaleQty = parseFloat(document.getElementById('v-scale').value) || e.scaleQty;
+  e.verifiedBy = currentRole === 'worker' ? 'Company Worker' : 'Admin';
+  e.workerNote = document.getElementById('v-note').value;
+  closeModal();
+  renderDashboard();
+  renderPendingList();
+  toast('✅ Entry approved');
+}
+
+function adjustEntry() {
+  const e = ENTRIES.find(en => en.id === currentVerifyId);
+  if (!e) return;
+  const newFinal = parseFloat(document.getElementById('v-final').value);
+  if (isNaN(newFinal)) { toast('⚠ Enter a valid final quantity'); return; }
+  e.finalQty = newFinal;
+  e.status = 'verified';
+  e.verifiedBy = currentRole === 'worker' ? 'Company Worker' : 'Admin';
+  e.workerNote = 'Adjusted: ' + document.getElementById('v-note').value;
+  closeModal();
+  renderDashboard();
+  toast('✏ Quantity adjusted and approved');
+}
+
+function rejectEntry() {
+  const e = ENTRIES.find(en => en.id === currentVerifyId);
+  if (!e) return;
+  e.status = 'rejected';
+  e.workerNote = document.getElementById('v-note').value;
+  closeModal();
+  renderDashboard();
+  renderPendingList();
+  toast('Entry rejected');
+}
+
+function closeModal() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+// ════════════════════════════════════════
+// FARMERS
+// ════════════════════════════════════════
+function renderFarmers() {
+  const tbody = document.getElementById('farmers-tbody');
+  tbody.innerHTML = '';
+  FARMERS.forEach(f => {
+    const monthEntries = ENTRIES.filter(e => e.farmerId === f.id && e.date.startsWith('2025-03') && e.status === 'verified');
+    const monthQty = monthEntries.reduce((s, e) => s + (e.finalQty ?? 0), 0);
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+    const bonusEligible = f.yearlyQty > BONUS_CONFIG.threshold;
+    tbody.innerHTML += `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="farmer-avatar" style="${avatarColors(f.crop)}">${initials(f.name)}</div>
+        <span style="font-weight:600;">${f.name}</span>
+      </div></td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">${f.id}</span></td>
+      <td>${cropBadge(f.crop)}</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">${f.account}</span></td>
+      <td><strong style="font-family:'IBM Plex Mono',monospace;">${monthQty.toFixed(1)}</strong> ${unit}</td>
+      <td><strong style="font-family:'IBM Plex Mono',monospace;">${f.yearlyQty.toLocaleString()}</strong> ${unit}</td>
+      <td>${bonusEligible ? '<span style="background:#dcfce7;color:#15803d;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Eligible</span>' : '<span style="background:var(--surface);color:var(--ink-soft);padding:3px 8px;border-radius:4px;font-size:11px;">Not yet</span>'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewFarmerEntries('${f.id}')">Entries</button></td>
+    </tr>`;
+  });
+}
+
+function viewFarmerEntries(farmerId) {
+  navigate('entries');
+  document.getElementById('entries-month').value = currentMonth;
+}
+
+function openAddFarmer() {
+  document.getElementById('add-farmer-modal').classList.add('open');
+}
+
+function saveFarmer() {
+  const first = document.getElementById('nf-first').value.trim();
+  const last = document.getElementById('nf-last').value.trim();
+  const id = document.getElementById('nf-id').value.trim();
+  const crop = document.getElementById('nf-crop').value;
+  const account = document.getElementById('nf-account').value.trim();
+  const location = document.getElementById('nf-location').value.trim();
+  if (!first || !last || !id || !account) { toast('⚠ Fill all required fields'); return; }
+
+  FARMERS.push({ id: 'F' + String(FARMERS.length + 1).padStart(3, '0'), name: first + ' ' + last, crop, account, location, yearlyQty: 0 });
+  closeModal();
+  renderFarmers();
+  toast('✅ Farmer registered');
+
+  // reset
+  ['nf-first','nf-last','nf-id','nf-account','nf-location'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ════════════════════════════════════════
+// ENTRIES
+// ════════════════════════════════════════
+function renderEntries() {
+  const month = document.getElementById('entries-month').value || currentMonth;
+  const cropFilter = document.getElementById('entries-crop-filter').value;
+  const tbody = document.getElementById('entries-tbody');
+
+  let entries = ENTRIES.filter(e => e.date.startsWith(month));
+  if (cropFilter) entries = entries.filter(e => getFarmer(e.farmerId)?.crop === cropFilter);
+
+  tbody.innerHTML = '';
+  entries.sort((a, b) => b.date.localeCompare(a.date)).forEach(e => {
+    const f = getFarmer(e.farmerId);
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+    const payout = (e.finalQty ?? 0) * PRICES[f.crop];
+    const diff = e.scaleQty && Math.abs(e.scaleQty - e.estQty) / e.estQty > 0.05;
+    tbody.innerHTML += `<tr>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;">${e.date}</td>
+      <td>${f.name}</td>
+      <td>${cropBadge(f.crop)}</td>
+      <td>${shiftBadge(e.shift)}</td>
+      <td>${e.estQty} ${unit}</td>
+      <td>${e.scaleQty ? `<span class="${diff ? 'qty-diff' : 'qty-match'}">${e.scaleQty} ${unit}</span>` : '—'}</td>
+      <td><strong>${e.finalQty ?? '—'} ${unit}</strong></td>
+      <td style="font-size:11px;color:var(--ink-soft);">${e.verifiedBy || '—'}</td>
+      <td>${statusBadge(e.status)}</td>
+      <td style="font-weight:600;color:var(--green-mid);">${e.status === 'verified' ? formatKsh(payout) : '—'}</td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// PAYMENTS
+// ════════════════════════════════════════
+function renderPayments() {
+  const tbody = document.getElementById('payments-tbody');
+  tbody.innerHTML = '';
+  FARMERS.forEach(f => {
+    const entries = ENTRIES.filter(e => e.farmerId === f.id && e.date.startsWith('2025-03') && e.status === 'verified');
+    const qty = entries.reduce((s, e) => s + (e.finalQty ?? 0), 0);
+    const gross = qty * PRICES[f.crop];
+    const bonusEligible = f.yearlyQty > BONUS_CONFIG.threshold;
+    const yearlyPay = f.yearlyQty * PRICES[f.crop];
+    const bonus = bonusEligible ? yearlyPay * BONUS_CONFIG.rate / 100 : 0;
+    const total = gross + bonus;
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+
+    tbody.innerHTML += `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="farmer-avatar" style="${avatarColors(f.crop)}">${initials(f.name)}</div>${f.name}
+      </div></td>
+      <td>${cropBadge(f.crop)}</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;">${qty.toFixed(1)} ${unit}</span></td>
+      <td>KSh ${PRICES[f.crop]}/${unit}</td>
+      <td>${formatKsh(gross)}</td>
+      <td style="color:${bonusEligible ? 'var(--green-mid)' : 'var(--ink-soft)'};">${bonusEligible ? formatKsh(bonus) + ' (accrued)' : '—'}</td>
+      <td style="font-weight:700;color:var(--green-mid);">${formatKsh(total)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;">${f.account}</td>
+      <td><span class="status s-${qty > 0 ? 'verified' : 'pending'}"><span class="status-dot"></span>${qty > 0 ? 'Payable' : 'Nil'}</span></td>
+    </tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// PRICES & BONUS
+// ════════════════════════════════════════
+function savePrices() {
+  PRICES.dairy = parseFloat(document.getElementById('price-dairy').value) || 45;
+  PRICES.tea = parseFloat(document.getElementById('price-tea').value) || 28;
+  PRICES.coffee = parseFloat(document.getElementById('price-coffee').value) || 60;
+  toast('✅ Unit prices saved');
+}
+
+function saveBonusConfig() {
+  BONUS_CONFIG.threshold = parseInt(document.getElementById('bonus-threshold').value) || 2000;
+  BONUS_CONFIG.rate = parseFloat(document.getElementById('bonus-rate').value) || 5;
+  document.getElementById('formula-thresh').textContent = BONUS_CONFIG.threshold.toLocaleString();
+  document.getElementById('formula-rate').textContent = BONUS_CONFIG.rate;
+  renderBonusTracker();
+  toast('✅ Bonus configuration saved');
+}
+
+function renderBonusTracker() {
+  const el = document.getElementById('bonus-tracker');
+  el.innerHTML = '';
+  FARMERS.forEach(f => {
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+    const pct = Math.min(100, (f.yearlyQty / BONUS_CONFIG.threshold) * 100);
+    const eligible = f.yearlyQty >= BONUS_CONFIG.threshold;
+    const yearlyPay = f.yearlyQty * PRICES[f.crop];
+    const bonus = eligible ? yearlyPay * BONUS_CONFIG.rate / 100 : 0;
+    el.innerHTML += `<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="farmer-avatar" style="${avatarColors(f.crop)};width:28px;height:28px;font-size:10px;">${initials(f.name)}</div>
+          <span style="font-size:13px;font-weight:600;">${f.name}</span>
+          ${eligible ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">BONUS</span>' : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;">${f.yearlyQty.toLocaleString()} / ${BONUS_CONFIG.threshold.toLocaleString()} ${unit}</div>
+          ${eligible ? `<div style="font-size:11px;color:var(--green-mid);font-weight:600;">${formatKsh(bonus)} bonus</div>` : ''}
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${eligible ? 'var(--green-mid)' : COLORS[f.crop]};"></div></div>
+    </div>`;
+  });
+}
+
+// ════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════
+function initExport() {
+  const monthInput = document.getElementById('export-month');
+  if (!monthInput.value) monthInput.value = currentMonth;
+
+  const farmerSel = document.getElementById('export-farmer-select');
+  farmerSel.innerHTML = '';
+  FARMERS.forEach(f => {
+    farmerSel.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+  });
+
+  document.getElementById('export-scope').addEventListener('change', function() {
+    document.getElementById('export-farmer-row').style.display = this.value === 'individual' ? '' : 'none';
+  });
+}
+
+function getMonthlyData(farmerId, yearMonth) {
+  const daysInMonth = new Date(parseInt(yearMonth.split('-')[0]), parseInt(yearMonth.split('-')[1]), 0).getDate();
+  const days = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = yearMonth + '-' + String(d).padStart(2, '0');
+    const dayEntries = ENTRIES.filter(e => e.farmerId === farmerId && e.date === dateStr && e.status === 'verified');
+    const qty = dayEntries.reduce((s, e) => s + (e.finalQty ?? 0), 0);
+    days.push(qty);
+  }
+  return days;
+}
+
+function previewExcel() {
+  const month = document.getElementById('export-month').value || currentMonth;
+  const scope = document.getElementById('export-scope').value;
+  const farmers = scope === 'individual'
+    ? [getFarmer(document.getElementById('export-farmer-select').value)]
+    : FARMERS;
+
+  const daysInMonth = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0).getDate();
+
+  let html = '<table><thead><tr>';
+  html += '<th>Farmer Name</th><th>ID</th><th>Crop</th><th>Account</th>';
+  for (let d = 1; d <= daysInMonth; d++) html += `<th>${d}</th>`;
+  html += '<th>Total Qty</th><th>Price/Unit</th><th>Total Pay</th><th>Yearly Qty</th><th>Bonus</th>';
+  html += '</tr></thead><tbody>';
+
+  farmers.filter(Boolean).forEach(f => {
+    const days = getMonthlyData(f.id, month);
+    const total = days.reduce((s, v) => s + v, 0);
+    const price = PRICES[f.crop];
+    const pay = total * price;
+    const bonusEligible = f.yearlyQty > BONUS_CONFIG.threshold;
+    const yearlyPay = f.yearlyQty * price;
+    const bonus = bonusEligible ? yearlyPay * BONUS_CONFIG.rate / 100 : 0;
+    const unit = f.crop === 'dairy' ? 'L' : 'kg';
+
+    html += `<tr><td>${f.name}</td><td>${f.id}</td><td>${f.crop}</td><td>${f.account}</td>`;
+    days.forEach(v => html += `<td>${v > 0 ? v.toFixed(1) : ''}</td>`);
+    html += `<td class="total-row">${total.toFixed(1)} ${unit}</td>`;
+    html += `<td>KSh ${price}</td>`;
+    html += `<td class="total-row">KSh ${pay.toFixed(2)}</td>`;
+    html += `<td>${f.yearlyQty.toLocaleString()}</td>`;
+    html += `<td class="${bonusEligible ? 'bonus-row' : ''}">${bonusEligible ? 'KSh ' + bonus.toFixed(2) : '—'}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+
+  document.getElementById('excel-preview-area').innerHTML = html;
+  toast('📊 Preview generated');
+}
+
+function generateExcel() {
+  const month = document.getElementById('export-month').value || currentMonth;
+  const scope = document.getElementById('export-scope').value;
+  const farmers = scope === 'individual'
+    ? [getFarmer(document.getElementById('export-farmer-select').value)]
+    : FARMERS;
+
+  const daysInMonth = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0).getDate();
+
+  const wb = XLSX.utils.book_new();
+  const ws_data = [];
+
+  // Header row
+  const header = ['Farmer Name', 'Farmer ID', 'Crop Type', 'Account Number'];
+  for (let d = 1; d <= daysInMonth; d++) header.push(`Day ${d}`);
+  header.push('Total Quantity', 'Unit Price (KSh)', 'Total Pay (KSh)', 'Yearly Qty', 'Annual Bonus (KSh)');
+  ws_data.push(header);
+
+  farmers.filter(Boolean).forEach(f => {
+    const days = getMonthlyData(f.id, month);
+    const total = days.reduce((s, v) => s + v, 0);
+    const price = PRICES[f.crop];
+    const pay = total * price;
+    const bonusEligible = f.yearlyQty > BONUS_CONFIG.threshold;
+    const yearlyPay = f.yearlyQty * price;
+    const bonus = bonusEligible ? yearlyPay * BONUS_CONFIG.rate / 100 : 0;
+
+    const row = [f.name, f.id, f.crop, f.account];
+    days.forEach(v => row.push(v > 0 ? parseFloat(v.toFixed(1)) : ''));
+    row.push(parseFloat(total.toFixed(1)), price, parseFloat(pay.toFixed(2)), f.yearlyQty, parseFloat(bonus.toFixed(2)));
+    ws_data.push(row);
+  });
+
+  // Add formula row
+  const fRow = ['TOTALS', '', '', ''];
+  for (let d = 0; d < daysInMonth; d++) fRow.push('');
+  fRow.push({ f: `SUM(E2:E${farmers.length + 1})` }, '', { f: `SUM(AM2:AM${farmers.length + 1})` }, '', '');
+  ws_data.push(fRow);
+
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  // Column widths
+  ws['!cols'] = [{ wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 18 }];
+  for (let d = 0; d < daysInMonth; d++) ws['!cols'].push({ wch: 7 });
+  ws['!cols'].push(...[{ wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 18 }]);
+
+  XLSX.utils.book_append_sheet(wb, ws, month + ' Report');
+  XLSX.writeFile(wb, `Shamba_EPR_${month}_Report.xlsx`);
+  toast('📥 Excel report downloaded');
+}
+
+// ════════════════════════════════════════
+// ROLE SWITCHING
+// ════════════════════════════════════════
+function switchRole(role) {
+  currentRole = role;
+  const roleNames = { farmer: 'JK', worker: 'WK', admin: 'AD' };
+  document.querySelector('.topbar-right div:last-child').textContent = roleNames[role] || 'AD';
+
+  // Show/hide admin nav items
+  const adminOnly = ['prices', 'export', 'payments'];
+  const workerOnly = ['pending'];
+
+  if (role === 'farmer') {
+    document.querySelectorAll('.nav-item[data-page="prices"], .nav-item[data-page="export"]').forEach(el => el.style.opacity = '0.3');
+  } else {
+    document.querySelectorAll('.nav-item').forEach(el => el.style.opacity = '1');
+  }
+  toast(`Switched to ${role} view`);
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+document.getElementById('entries-month').value = currentMonth;
+
+// Populate log farmer on init
+initLogEntry();
+renderDashboard();
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+});
+
+// Offline detection
+window.addEventListener('online', () => { document.getElementById('offline-bar').style.display = 'none'; toast('🔄 Back online — syncing entries...'); });
+window.addEventListener('offline', () => { document.getElementById('offline-bar').style.display = 'block'; });
+
+// Update formula live
+document.getElementById('bonus-threshold').addEventListener('input', function() {
+  document.getElementById('formula-thresh').textContent = parseInt(this.value).toLocaleString();
+});
+document.getElementById('bonus-rate').addEventListener('input', function() {
+  document.getElementById('formula-rate').textContent = this.value;
+});
+</script>
+</body>
+</html>
